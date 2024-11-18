@@ -1,0 +1,138 @@
+/*
+ 
+ 								World Life Expectancy Project (Exploratory Data Analysis)
+
+The purpose of this project is to identify global life expectancy and health metrics to uncover trends, correlations, and disparities across countries. 
+
+*/
+
+Select --This was to check what was the lowest and highest life expectancy for each country for the past 15 years from 2007 to 2022.
+      country
+     ,min (life_expectancy)
+	 ,max (life_expectancy)
+from world_life_expectancy
+group by country
+order by country desc;
+
+Select -- After check the last step, This was used to identify the countries that does not have a 0 value in the min and max life expectancy as it may be a data quality issue for countries with a 0 value.
+       country
+     ,min (cast(life_expectancy as numeric)) as min_life_expectancy
+	 ,max (cast(life_expectancy as numeric)) as max_life_expectancy
+from world_life_expectancy
+group by country
+having min(cast (life_expectancy as numeric)) <> 0 
+and max(cast (life_expectancy as numeric)) <> 0
+order by country desc;
+
+select --This was used to calculate if the life expectancy has increased or decreased in each country from 2007 to 2022 by subtracting the maximum and minimum life expectancy.
+ country
+     ,min (cast(life_expectancy as numeric)) as min_life_expectancy
+	 ,max (cast(life_expectancy as numeric)) as max_life_expectancy
+	 ,round(((max (cast(life_expectancy as numeric))) - (min (cast(life_expectancy as numeric)))),1) as life_increase_over_15_years
+from world_life_expectancy
+group by country
+having min(cast (life_expectancy as numeric)) <> 0 
+and max(cast (life_expectancy as numeric)) <> 0
+order by country desc;
+
+select --this was used to calculate the average life expectancy for all countries combined in each year. To make the calculation more accurate/realistic, countries that had a 0 value in the min or max life expectancy were filtered out.
+ year
+,round(avg(cast(life_expectancy as numeric)),2) as average_life_expectancy
+from world_life_expectancy
+where (cast(life_expectancy as numeric)) <> 0
+group by year
+order by year;
+
+select --this was used to identify if there is a positive or negative correlation between GDP and life_expectancy for each country per year. Generally, if a GDP is high in a country, then their life expectancy is also high and vice versa if GDP was low in a country then their life expectancy is low. 
+  country
+ , year
+ , gdp
+ , life_expectancy
+from world_life_expectancy;
+
+select --this was used to calculate the average gdp and life_expectancy for each country to check if there's any correlations.
+   country
+ , round(avg(cast(life_expectancy as numeric)),1) as life_expectancy
+ , round(avg(gdp),1) as gdp
+from world_life_expectancy
+group by country
+order by country asc;
+
+select --this was used to identify whether the zero values in life_expectancy and gdp is correct data or if it needs to be corrected.
+   country
+ , round(avg(cast(life_expectancy as numeric)),1) as life_expectancy
+ , round(avg(gdp),1) as gdp
+from world_life_expectancy
+group by country
+order by life_expectancy asc;
+
+select --after creating this output, it was found that there is a positive correlation between low gdp and low life_expectancy.
+   country
+ , round(avg(cast(life_expectancy as numeric)),1) as life_expectancy
+ , round(avg(gdp),1) as gdp
+from world_life_expectancy
+group by country
+having avg(cast(life_expectancy as numeric)) > 0
+and avg(gdp) > 0
+order by gdp asc;
+
+select --this query was used to test the opposite of the above's query, which is to see if there is a positive correlation between high gdp and high life expectancy. This output reveals the result of a high gdp per capita causes an increase in life expectancy by economic growth and development in a country. 
+   country
+ , round(avg(cast(life_expectancy as numeric)),1) as life_expectancy
+ , round(avg(gdp),1) as gdp
+from world_life_expectancy
+group by country
+having avg(cast(life_expectancy as numeric)) > 0
+and avg(gdp) > 0
+order by gdp desc;
+
+select --this query was to count the number of countries with a high gdp/low gdp and identify their average life_expectancy. The value 1500 in the GDP section was used as the halfway point between the high and low GDP values.
+
+sum(case when gdp >=1500 then 1 else 0 end) high_gdp_count,--the results show a certain amount of rows (countries) that have a GDP higher than 1500.
+
+avg(case when gdp >=1500 then (cast(life_expectancy as numeric)) else null end) high_gdp_life_expectancy,--the results are based on the average life expectancy if GDP is greater than 1500. Null was used to filter out 0 values.
+
+sum(case when gdp <=1500 then 1 else 0 end) low_gdp_count,--the results show a certain amount of rows (countries) that have a GDP lower than 1500.
+
+avg(case when gdp <=1500 then (cast(life_expectancy as numeric)) else null end) low_gdp_life_expectancy--the results are based on the average life expectancy if GDP is lower than 1500. Null was used to filter out 0 values.
+
+from world_life_expectancy;--the final results show a high correlation between a high GDP and high life expectancy and a low GDP and low life expectancy.
+
+select --this query was to identify if there is a difference in how a country's status, whether that is developed or undeveloped, with a variety of factors can affect the civilian's life expectancy
+status, 
+round(avg(cast(life_expectancy as numeric)),1)
+from world_life_expectancy
+group by status;--the results show that there a very few countries that have low life expectancy compared to countries with a high life expectancy so the next query will be used to accurately count the number of developed and developing countries
+
+select --this query was done to count the number of developed and undeveloped countries to further understand the difference of their average life expectancy between the two categories.
+status
+,count(distinct country) as count_of_each_country
+,round(avg(cast(life_expectancy as numeric)),1) as avg_life_expectancy
+from world_life_expectancy
+group by status;--the results show the developed countries have a higher life expectancy than developing countries which is to be expected because it would be easier to keep that high average if there aren't too many developed countries.
+
+select --this query is used to check the correlation between the average bmi and average life expectancy in each country. The 0 value was filtered out of the life expectancy and bmi columns to make the results more accurate.
+country
+,round(avg(cast(life_expectancy as numeric)),1) as avg_life_expectancy
+,round(avg(bmi),1) as average_bmi 
+from world_life_expectancy
+where (cast(life_expectancy as numeric)) > 0 and bmi > 0
+group by country
+order by average_bmi desc;--the results show the developed countries that have a high bmi, also has a high life expectancy.
+
+select --this query is used to check the correlation between the average bmi and average life expectancy in each country. The 0 value was filtered out of the life expectancy and bmi columns to make the results more accurate.
+country
+,round(avg(cast(life_expectancy as numeric)),1) as avg_life_expectancy
+,round(avg(bmi),1) as average_bmi 
+from world_life_expectancy
+where (cast(life_expectancy as numeric)) > 0 and bmi > 0
+group by country
+order by average_bmi asc;--the results show the developing countries that have a low bmi, also has a low life expectancy.
+
+select--this is query is used to compare a country's adult mortality to their life expectancy. Rolling total is used to add the sum of adult mortality values year after year in a stuctured sequence for each country.
+country
+, year
+, (cast(life_expectancy as numeric))
+, adult_mortality
+, sum(adult_mortality) over(partition by country order by year) as rolling_total
+from world_life_expectancy;
